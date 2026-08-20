@@ -7,13 +7,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
-import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.text.format.Formatter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -164,9 +162,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun getLocalIpAddress(): String? {
         return try {
-            val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-            val ipInt = wifiManager.connectionInfo.ipAddress
-            if (ipInt == 0) null else Formatter.formatIpAddress(ipInt)
+            java.net.NetworkInterface.getNetworkInterfaces()?.toList()
+                ?.flatMap { it.inetAddresses.toList() }
+                ?.filter { !it.isLoopbackAddress && it is java.net.Inet4Address }
+                ?.map { it.hostAddress }
+                ?.firstOrNull { addr ->
+                    addr != null && !addr.startsWith("100.") && !addr.startsWith("127.")
+                }
         } catch (_: Exception) { null }
     }
 
