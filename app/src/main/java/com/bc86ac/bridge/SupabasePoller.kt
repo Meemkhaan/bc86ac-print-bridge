@@ -123,33 +123,69 @@ class SupabasePoller(private val context: Context) {
     }
 
     private fun updateJobStatus(baseUrl: String, apiKey: String, jobId: String, status: String, error: String?) {
-        val url = URL("$baseUrl/rest/v1/print_jobs?id=eq.$jobId")
-        val conn = url.openConnection() as HttpURLConnection
-        conn.requestMethod = "PATCH"
-        conn.setRequestProperty("apikey", apiKey)
-        conn.setRequestProperty("Authorization", "Bearer $apiKey")
-        conn.setRequestProperty("Content-Type", "application/json")
-        conn.setRequestProperty("Prefer", "return=minimal")
-        conn.doOutput = true
-        conn.connectTimeout = 8000
-        conn.readTimeout = 8000
-
         val body = JSONObject().apply {
             put("status", status)
             if (error != null) put("error", error)
             if (status == "done") put("printed_at", isoNow())
-        }
+        }.toString()
 
-        conn.outputStream.use { it.write(body.toString().toByteArray()) }
+        // Android's HttpURLConnection refuses the PATCH method outright
+        // (throws ProtocolException immediately, before any request is
+        // sent) -- a real, long-standing platform restriction, not
+        // something fixable by config. So we build the PATCH request by
+        // hand over a raw TLS socket instead, the same low-level approach
+        // already used for the printer connection, just over HTTPS here.
+        val url = URL("$baseUrl/rest/v1/print_jobs?id=eq.$jobId")
+        val host = url.host
+        val path = url.file
+        val bodyBytes = body.toByteArray(Charsets.UTF_8)
+
+        val socketFactory = javax.net.ssl.SSLSocketFactory.getDefault()
+        val socket = socketFactory.createSocket(host, 443) as javax.net.ssl.SSLSocket
+        socket.soTimeout = 8000
 
         try {
-            val code = conn.responseCode
+            val request = buildString {
+                append("PATCH $path HTTP/1.1\r\n")
+                append("Host: $host\r\n")
+                append("apikey: $apiKey\r\n")
+                append("Authorization: Bearer $apiKey\r\n")
+                append("Content-Type: application/json\r\n")
+                append("Prefer: return=minimal\r\n")
+                append("Content-Length: ${bodyBytes.size}\r\n")
+                append("Connection: close\r\n")
+                append("\r\n")
+            }
+
+            val out = socket.outputStream
+            out.write(request.toByteArray(Charsets.UTF_8))
+            out.write(bodyBytes)
+            out.flush()
+
+            val statusLine = readLineFromSocket(socket.inputStream)
+                ?: throw IllegalStateException("No response from Supabase")
+            // e.g. "HTTP/1.1 204 No Content" -- pull out the status code
+            val parts = statusLine.split(" ")
+            val code = parts.getOrNull(1)?.toIntOrNull()
+                ?: throw IllegalStateException("Malformed response: $statusLine")
+
             if (code !in 200..299) {
                 throw IllegalStateException("Supabase PATCH returned $code")
             }
         } finally {
-            conn.disconnect()
+            try { socket.close() } catch (_: Exception) {}
         }
+    }
+
+    private fun readLineFromSocket(input: java.io.InputStream): String? {
+        val buf = java.io.ByteArrayOutputStream()
+        var b = input.read()
+        if (b == -1) return null
+        while (b != -1 && b != '\n'.code) {
+            if (b != '\r'.code) buf.write(b)
+            b = input.read()
+        }
+        return buf.toString("UTF-8")
     }
 
     private fun isoNow(): String {
