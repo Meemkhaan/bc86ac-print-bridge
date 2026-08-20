@@ -216,5 +216,84 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Cloud sync card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#242220"
+            android:padding="16dp"
+            android:layout_marginTop="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CLOUD SYNC (SUPABASE)"
+                android:textColor="#8a8073"
+                android:textSize="11sp"
+                android:letterSpacing="0.08"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Lets your Vercel-hosted app queue print jobs that this tablet picks up automatically -- needed because Vercel can't reach this LAN directly."
+                android:textColor="#8a8073"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/cloudSyncStatusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Not configured"
+                android:textColor="#f6f2e7"
+                android:textSize="12sp"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Supabase project URL"
+                android:textColor="#8a8073"
+                android:textSize="10sp" />
+
+            <EditText
+                android:id="@+id/supabaseUrlInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri"
+                android:textColor="#f6f2e7"
+                android:fontFamily="monospace"
+                android:hint="https://xxxx.supabase.co" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Supabase anon (public) key"
+                android:textColor="#8a8073"
+                android:textSize="10sp" />
+
+            <EditText
+                android:id="@+id/supabaseKeyInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:textColor="#f6f2e7"
+                android:fontFamily="monospace"
+                android:hint="eyJhbGciOi..." />
+
+            <Button
+                android:id="@+id/saveCloudBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Save" />
+
+        </LinearLayout>
+
     </LinearLayout>
 </ScrollView>

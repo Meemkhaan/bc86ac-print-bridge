@@ -28,6 +28,19 @@ object PrinterBridge {
         }
     }
 
+    fun printAuto(context: Context, bytes: ByteArray) {
+        val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
+        val device = getPairedUsbDevice(context)
+        if (device != null && usbManager.hasPermission(device)) {
+            printOverUsb(context, bytes)
+            return
+        }
+        val prefs = context.getSharedPreferences(PrintBridgeService.PREFS_NAME, Context.MODE_PRIVATE)
+        val ip = prefs.getString("printer_ip", "192.168.18.100")!!
+        val port = prefs.getString("printer_port", "9100")!!.toIntOrNull() ?: 9100
+        printOverNetwork(ip, port, bytes)
+    }
+
     fun printOverUsb(context: Context, bytes: ByteArray) {
         val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
         val device = getPairedUsbDevice(context)

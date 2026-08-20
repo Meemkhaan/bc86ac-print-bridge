@@ -75,8 +75,10 @@ class MainActivity : AppCompatActivity() {
         binding.testNetworkBtn.setOnClickListener { testPrint(useUsb = false) }
         binding.saveNetworkBtn.setOnClickListener { saveNetworkConfig() }
         binding.batteryOptBtn.setOnClickListener { requestIgnoreBatteryOptimizations() }
+        binding.saveCloudBtn.setOnClickListener { saveCloudConfig() }
 
         loadNetworkConfig()
+        loadCloudConfig()
         requestNotificationPermissionIfNeeded()
         startBridgeService() // auto-start on app open; also runs on boot via BootReceiver
     }
@@ -84,6 +86,19 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refreshStatus()
+        mainHandler.post(statusRefreshRunnable)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        mainHandler.removeCallbacks(statusRefreshRunnable)
+    }
+
+    private val statusRefreshRunnable = object : Runnable {
+        override fun run() {
+            refreshStatus()
+            mainHandler.postDelayed(this, 2000)
+        }
     }
 
     override fun onDestroy() {
@@ -127,6 +142,24 @@ class MainActivity : AppCompatActivity() {
 
         val paired = getPairedDeviceInfo()
         binding.usbStatusText.text = paired ?: "No USB printer paired"
+
+        binding.cloudSyncStatusText.text = getCloudSyncStatusText()
+    }
+
+    private fun getCloudSyncStatusText(): String {
+        val url = prefs.getString("supabase_url", null)
+        if (url.isNullOrBlank()) return "Not configured"
+
+        val lastPoll = SupabasePoller.lastPollAt
+        val err = SupabasePoller.lastError
+        if (lastPoll == 0L) return "Configured, waiting for first poll..."
+
+        val secondsAgo = (System.currentTimeMillis() - lastPoll) / 1000
+        return if (err != null) {
+            "Error: $err (last tried ${secondsAgo}s ago)"
+        } else {
+            "Connected, last checked ${secondsAgo}s ago"
+        }
     }
 
     private fun getLocalIpAddress(): String? {
@@ -182,6 +215,21 @@ class MainActivity : AppCompatActivity() {
             .putString("printer_port", binding.printerPortInput.text.toString().trim())
             .apply()
         toast("Saved")
+    }
+
+    // ---- Cloud sync (Supabase) config ----
+
+    private fun loadCloudConfig() {
+        binding.supabaseUrlInput.setText(prefs.getString("supabase_url", ""))
+        binding.supabaseKeyInput.setText(prefs.getString("supabase_anon_key", ""))
+    }
+
+    private fun saveCloudConfig() {
+        prefs.edit()
+            .putString("supabase_url", binding.supabaseUrlInput.text.toString().trim())
+            .putString("supabase_anon_key", binding.supabaseKeyInput.text.toString().trim())
+            .apply()
+        toast("Saved -- polling will pick up the new config within a few seconds")
     }
 
     // ---- Test prints ----

@@ -61,11 +61,13 @@ class PrintBridgeService : Service() {
     private val pool = Executors.newCachedThreadPool()
     private lateinit var usbManager: UsbManager
     private lateinit var prefs: SharedPreferences
+    private lateinit var poller: SupabasePoller
 
     override fun onCreate() {
         super.onCreate()
         usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        poller = SupabasePoller(applicationContext)
         createNotificationChannel()
     }
 
@@ -75,12 +77,14 @@ class PrintBridgeService : Service() {
             running.set(true)
             pool.execute { runServer() }
         }
+        poller.start()
         return START_STICKY
     }
 
     override fun onDestroy() {
         running.set(false)
         isRunning = false
+        poller.stop()
         try { if (::serverSocket.isInitialized) serverSocket.close() } catch (_: Exception) {}
         pool.shutdownNow()
         super.onDestroy()
