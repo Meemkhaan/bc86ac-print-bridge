@@ -162,13 +162,25 @@ class MainActivity : AppCompatActivity() {
 
     private fun getLocalIpAddress(): String? {
         return try {
-            java.net.NetworkInterface.getNetworkInterfaces()?.toList()
-                ?.flatMap { it.inetAddresses.toList() }
-                ?.filter { !it.isLoopbackAddress && it is java.net.Inet4Address }
-                ?.map { it.hostAddress }
-                ?.firstOrNull { addr ->
-                    addr != null && !addr.startsWith("100.") && !addr.startsWith("127.")
+            val interfaces = java.net.NetworkInterface.getNetworkInterfaces()
+            var fallback: String? = null
+            while (interfaces.hasMoreElements()) {
+                val iface = interfaces.nextElement()
+                if (iface.isLoopback || !iface.isUp) continue
+                val addresses = iface.inetAddresses
+                while (addresses.hasMoreElements()) {
+                    val addr = addresses.nextElement()
+                    if (addr is java.net.Inet4Address) {
+                        val ip = addr.hostAddress ?: continue
+                        if (ip.startsWith("100.")) {
+                            if (fallback == null) fallback = ip
+                            continue
+                        }
+                        return ip
+                    }
                 }
+            }
+            fallback
         } catch (_: Exception) { null }
     }
 
