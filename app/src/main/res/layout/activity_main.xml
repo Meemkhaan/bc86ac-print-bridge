@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1b1a18">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BC-86AC Print Bridge"
+            android:textColor="#f6f2e7"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="20dp"
+            android:text="Keep this app open (or just installed and running in the background) and the printer connected. No Termux, no manual setup."
+            android:textColor="#8a8073"
+            android:textSize="12sp" />
+
+        <!-- Service status card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#242220"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BRIDGE SERVICE"
+                android:textColor="#8a8073"
+                android:textSize="11sp"
+                android:letterSpacing="0.08"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/serviceStatusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Checking..."
+                android:textColor="#f6f2e7"
+                android:textSize="14sp"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/lanAddressText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text=""
+                android:textColor="#d98b1f"
+                android:textSize="12sp"
+                android:fontFamily="monospace" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="12dp">
+
+                <Button
+                    android:id="@+id/startServiceBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="Start" />
+
+                <Button
+                    android:id="@+id/stopServiceBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="Stop" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/batteryOptBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Disable battery optimization for this app" />
+        </LinearLayout>
+
+        <!-- USB card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#242220"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="USB PRINTER"
+                android:textColor="#8a8073"
+                android:textSize="11sp"
+                android:letterSpacing="0.08"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/usbStatusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="No USB printer paired"
+                android:textColor="#f6f2e7"
+                android:textSize="13sp"
+                android:fontFamily="monospace" />
+
+            <Button
+                android:id="@+id/pairUsbBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Pair USB printer" />
+
+            <Button
+                android:id="@+id/testUsbBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Test print (USB)" />
+        </LinearLayout>
+
+        <!-- Network card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#242220"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="NETWORK PRINTER"
+                android:textColor="#8a8073"
+                android:textSize="11sp"
+                android:letterSpacing="0.08"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Printer IP"
+                android:textColor="#8a8073"
+                android:textSize="10sp" />
+
+            <EditText
+                android:id="@+id/printerIpInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:textColor="#f6f2e7"
+                android:fontFamily="monospace"
+                android:hint="192.168.18.100" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Printer port"
+                android:textColor="#8a8073"
+                android:textSize="10sp" />
+
+            <EditText
+                android:id="@+id/printerPortInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:textColor="#f6f2e7"
+                android:fontFamily="monospace"
+                android:hint="9100" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="10dp">
+
+                <Button
+                    android:id="@+id/saveNetworkBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="Save" />
+
+                <Button
+                    android:id="@+id/testNetworkBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="Test print (Network)" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

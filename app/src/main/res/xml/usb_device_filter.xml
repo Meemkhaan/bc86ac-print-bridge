@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  No vendorId/productId restriction: BC-86AC clone boards have shipped with
+  a few different internal USB bridge chips, so we accept any USB device
+  here and let the user confirm the right one in the app if more than one
+  is plugged in.
+-->
+<resources>
+    <usb-device />
+</resources>
