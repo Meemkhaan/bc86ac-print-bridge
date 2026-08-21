@@ -92,6 +92,10 @@ class SupabasePoller(private val context: Context) {
             try {
                 patchJobStatus(baseUrl, apiKey, id, "printing", null)
                 val bytes = Base64.decode(payloadBase64, Base64.DEFAULT)
+                Log.d(TAG, "Job $id: payload_base64 length=${payloadBase64.length}, decoded ${bytes.size} bytes")
+                if (bytes.size > 0) {
+                    Log.d(TAG, "Job $id: first 32 bytes = ${bytes.take(32).joinToString(" ") { "%02X".format(it) }}")
+                }
                 PrinterBridge.printAuto(context, bytes)
                 patchJobStatus(baseUrl, apiKey, id, "done", null)
                 lastPrintedJobId = id

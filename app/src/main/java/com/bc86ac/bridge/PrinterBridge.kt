@@ -35,9 +35,11 @@ object PrinterBridge {
     fun printAuto(context: Context, bytes: ByteArray) {
         val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
         val device = getPairedUsbDevice(context)
+        Log.d(TAG, "printAuto: ${bytes.size} bytes, USB device=${device?.productName}, hasPermission=${device?.let { usbManager.hasPermission(it) }}")
         if (device != null && usbManager.hasPermission(device)) {
             try {
                 printOverUsb(context, bytes)
+                Log.d(TAG, "printAuto: USB print succeeded")
                 return
             } catch (e: Exception) {
                 Log.w(TAG, "USB print failed, falling back to network: ${e.message}")
@@ -46,7 +48,9 @@ object PrinterBridge {
         val prefs = context.getSharedPreferences(PrintBridgeService.PREFS_NAME, Context.MODE_PRIVATE)
         val ip = prefs.getString("printer_ip", "192.168.18.100")!!
         val port = prefs.getString("printer_port", "9100")!!.toIntOrNull() ?: 9100
+        Log.d(TAG, "printAuto: printing over network to $ip:$port")
         printOverNetworkWithRetry(ip, port, bytes)
+        Log.d(TAG, "printAuto: network print succeeded")
     }
 
     fun printOverUsb(context: Context, bytes: ByteArray) {
@@ -87,6 +91,7 @@ object PrinterBridge {
             socket.connect(InetSocketAddress(host, port), 5000)
             socket.getOutputStream().write(bytes)
             socket.getOutputStream().flush()
+            Log.d(TAG, "Network print: sent ${bytes.size} bytes to $host:$port, socket OutputStream flushed")
             Thread.sleep(200) // give the printer a moment before we close
         }
     }
