@@ -321,10 +321,16 @@ class MainActivity : AppCompatActivity() {
         binding.installUpdateBtn.isEnabled = false
         binding.updateStatusText.text = "Downloading..."
         executor.execute {
-            AppUpdater.downloadAndInstall(this, update) { msg ->
+            val uri = AppUpdater.downloadToDownloads(this, update) { msg ->
                 mainHandler.post { binding.updateStatusText.text = msg }
             }
-            mainHandler.post { binding.installUpdateBtn.isEnabled = true }
+            mainHandler.post {
+                binding.installUpdateBtn.isEnabled = true
+                if (uri != null) {
+                    binding.updateStatusText.text = "Saved to Downloads folder. Open Files app to install."
+                    toast("APK saved to Downloads — open Files app to install")
+                }
+            }
         }
     }
 

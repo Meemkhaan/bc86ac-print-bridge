@@ -1,11 +1,15 @@
 package com.bc86ac.bridge
 
+import android.app.DownloadManager
 import android.app.PendingIntent
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import org.json.JSONArray
 import java.io.File
@@ -95,55 +99,54 @@ object AppUpdater {
         return null
     }
 
-    fun downloadAndInstall(context: Context, update: UpdateInfo, onProgress: ((String) -> Unit)? = null) {
+    fun downloadToDownloads(context: Context, update: UpdateInfo, onProgress: ((String) -> Unit)? = null): Uri? {
         try {
             onProgress?.invoke("Downloading ${update.releaseName}...")
 
             val url = URL(update.downloadUrl)
             val conn = url.openConnection() as HttpURLConnection
             conn.connectTimeout = 30000
-            conn.readTimeout = 60000
+            conn.readTimeout = 120000
 
             val code = conn.responseCode
             if (code !in 200..299) {
                 onProgress?.invoke("Download failed: HTTP $code")
-                return
+                return null
             }
 
-            val apkFile = File(context.cacheDir, "update-${update.versionCode}.apk")
-            apkFile.outputStream().use { out ->
-                conn.inputStream.use { inp ->
-                    inp.copyTo(out)
+            val fileName = "bc86ac-bridge-${update.releaseName}.apk"
+            val savedUri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val values = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                    put(MediaStore.Downloads.MIME_TYPE, "application/vnd.android.package-archive")
+                    put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
                 }
+                val resolver = context.contentResolver
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                    ?: throw IllegalStateException("Could not create Downloads entry")
+                resolver.openOutputStream(uri)?.use { out ->
+                    conn.inputStream.use { inp -> inp.copyTo(out) }
+                }
+                uri
+            } else {
+                @Suppress("DEPRECATION")
+                val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                dir.mkdirs()
+                val file = File(dir, fileName)
+                file.outputStream().use { out ->
+                    conn.inputStream.use { inp -> inp.copyTo(out) }
+                }
+                Uri.fromFile(file)
             }
             conn.disconnect()
 
-            onProgress?.invoke("Installing...")
-            installApk(context, apkFile)
+            onProgress?.invoke("Saved to Downloads: $fileName")
+            Log.d(TAG, "APK saved to Downloads: $savedUri")
+            return savedUri
         } catch (e: Exception) {
-            Log.e(TAG, "Download/install failed: ${e.message}", e)
+            Log.e(TAG, "Download failed: ${e.message}", e)
             onProgress?.invoke("Failed: ${e.message}")
+            return null
         }
-    }
-
-    private fun installApk(context: Context, apkFile: File) {
-        val packageInstaller = context.packageManager.packageInstaller
-        val sessionParams = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
-        val sessionId = packageInstaller.createSession(sessionParams)
-
-        val session = packageInstaller.openSession(sessionId)
-        session.openWrite("apk", 0, apkFile.length()).use { out ->
-            apkFile.inputStream().use { inp ->
-                inp.copyTo(out)
-            }
-            session.fsync(out)
-        }
-
-        val intent = Intent(context, InstallResultReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            context, sessionId, intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-        )
-        session.commit(pendingIntent.intentSender)
     }
 }
