@@ -74,9 +74,11 @@ class MainActivity : AppCompatActivity() {
         binding.saveNetworkBtn.setOnClickListener { saveNetworkConfig() }
         binding.batteryOptBtn.setOnClickListener { requestIgnoreBatteryOptimizations() }
         binding.saveCloudBtn.setOnClickListener { saveCloudConfig() }
+        binding.editCloudBtn.setOnClickListener { editCloudConfig() }
 
         loadNetworkConfig()
         loadCloudConfig()
+        setCloudFieldsEditable(false)
         requestNotificationPermissionIfNeeded()
         startBridgeService() // auto-start on app open; also runs on boot via BootReceiver
     }
@@ -243,7 +245,25 @@ class MainActivity : AppCompatActivity() {
             .putString("supabase_url", binding.supabaseUrlInput.text.toString().trim())
             .putString("supabase_anon_key", binding.supabaseKeyInput.text.toString().trim())
             .apply()
+        setCloudFieldsEditable(false)
         toast("Saved -- polling will pick up the new config within a few seconds")
+    }
+
+    private fun editCloudConfig() {
+        setCloudFieldsEditable(true)
+    }
+
+    private fun setCloudFieldsEditable(editable: Boolean) {
+        binding.supabaseUrlInput.isEnabled = editable
+        binding.supabaseKeyInput.isEnabled = editable
+        binding.supabaseUrlInput.isFocusable = editable
+        binding.supabaseUrlInput.isFocusableInTouchMode = editable
+        binding.supabaseKeyInput.isFocusable = editable
+        binding.supabaseKeyInput.isFocusableInTouchMode = editable
+        binding.supabaseUrlInput.alpha = if (editable) 1.0f else 0.7f
+        binding.supabaseKeyInput.alpha = if (editable) 1.0f else 0.7f
+        binding.saveCloudBtn.visibility = if (editable) android.view.View.VISIBLE else android.view.View.GONE
+        binding.editCloudBtn.visibility = if (editable) android.view.View.GONE else android.view.View.VISIBLE
     }
 
     // ---- Test prints ----

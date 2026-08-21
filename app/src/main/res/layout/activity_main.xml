@@ -267,7 +267,10 @@
                 android:inputType="textUri"
                 android:textColor="#f6f2e7"
                 android:fontFamily="monospace"
-                android:hint="https://xxxx.supabase.co" />
+                android:hint="https://xxxx.supabase.co"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:alpha="0.7" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -284,14 +287,34 @@
                 android:inputType="textPassword"
                 android:textColor="#f6f2e7"
                 android:fontFamily="monospace"
-                android:hint="eyJhbGciOi..." />
+                android:hint="eyJhbGciOi..."
+                android:focusable="false"
+                android:focusableInTouchMode="false"
+                android:alpha="0.7" />
 
-            <Button
-                android:id="@+id/saveCloudBtn"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="Save" />
+                android:orientation="horizontal"
+                android:layout_marginTop="10dp">
+
+                <Button
+                    android:id="@+id/saveCloudBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="Save"
+                    android:visibility="gone" />
+
+                <Button
+                    android:id="@+id/editCloudBtn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="Edit" />
+            </LinearLayout>
 
         </LinearLayout>
 
