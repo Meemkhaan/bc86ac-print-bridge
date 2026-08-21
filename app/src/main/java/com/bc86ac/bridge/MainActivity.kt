@@ -76,12 +76,14 @@ class MainActivity : AppCompatActivity() {
         binding.saveCloudBtn.setOnClickListener { saveCloudConfig() }
         binding.editCloudBtn.setOnClickListener { editCloudConfig() }
         binding.testCloudBtn.setOnClickListener { testCloudSync() }
+        binding.installUpdateBtn.setOnClickListener { installUpdate() }
 
         loadNetworkConfig()
         loadCloudConfig()
         setCloudFieldsEditable(false)
         requestNotificationPermissionIfNeeded()
         startBridgeService() // auto-start on app open; also runs on boot via BootReceiver
+        checkForUpdate()
     }
 
     override fun onResume() {
@@ -293,6 +295,36 @@ class MainActivity : AppCompatActivity() {
                 binding.cloudSyncDetailText.visibility = android.view.View.VISIBLE
                 toast(result)
             }
+        }
+    }
+
+    // ---- Auto-update ----
+
+    private var pendingUpdate: AppUpdater.UpdateInfo? = null
+
+    private fun checkForUpdate() {
+        executor.execute {
+            val update = AppUpdater.checkForUpdate(this)
+            mainHandler.post {
+                if (update != null) {
+                    pendingUpdate = update
+                    binding.updateCard.visibility = android.view.View.VISIBLE
+                    binding.updateStatusText.text = "New build available: ${update.releaseName}"
+                    binding.installUpdateBtn.visibility = android.view.View.VISIBLE
+                }
+            }
+        }
+    }
+
+    private fun installUpdate() {
+        val update = pendingUpdate ?: return
+        binding.installUpdateBtn.isEnabled = false
+        binding.updateStatusText.text = "Downloading..."
+        executor.execute {
+            AppUpdater.downloadAndInstall(this, update) { msg ->
+                mainHandler.post { binding.updateStatusText.text = msg }
+            }
+            mainHandler.post { binding.installUpdateBtn.isEnabled = true }
         }
     }
 

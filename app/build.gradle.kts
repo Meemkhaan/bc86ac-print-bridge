@@ -11,8 +11,9 @@ android {
         applicationId = "com.bc86ac.bridge"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        val runNumber = System.getenv("GITHUB_RUN_NUMBER")
+        versionCode = if (runNumber != null) runNumber.toInt() else 1
+        versionName = "1.0.${versionCode}"
     }
 
     buildTypes {

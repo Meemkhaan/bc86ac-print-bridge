@@ -29,6 +29,45 @@
             android:textColor="#8a8073"
             android:textSize="12sp" />
 
+        <!-- Update card -->
+        <LinearLayout
+            android:id="@+id/updateCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#242220"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="UPDATE"
+                android:textColor="#8a8073"
+                android:textSize="11sp"
+                android:letterSpacing="0.08"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/updateStatusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="#d98b1f"
+                android:textSize="13sp"
+                android:fontFamily="monospace" />
+
+            <Button
+                android:id="@+id/installUpdateBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Download & Install"
+                android:textAllCaps="false"
+                android:visibility="gone" />
+        </LinearLayout>
+
         <!-- Service status card -->
         <LinearLayout
             android:layout_width="match_parent"
