@@ -30,6 +30,8 @@ class SupabasePoller(private val context: Context) {
         @Volatile var lastPollAt: Long = 0
         @Volatile var lastError: String? = null
         @Volatile var lastPrintedJobId: String? = null
+        @Volatile var lastJobsFound: Int = 0
+        @Volatile var lastPollDetail: String? = null
     }
 
     private val running = AtomicBoolean(false)
@@ -53,10 +55,12 @@ class SupabasePoller(private val context: Context) {
                 val (url, key) = readConfig()
                 if (url != null && key != null) {
                     pollOnce(url, key)
-                    lastError = null
+                } else {
+                    lastPollDetail = "No config set"
                 }
             } catch (e: Exception) {
                 lastError = e.message ?: "Poll failed"
+                lastPollDetail = "Exception: ${e.message}"
                 Log.w(TAG, "Poll error", e)
             }
             lastPollAt = System.currentTimeMillis()
@@ -73,26 +77,39 @@ class SupabasePoller(private val context: Context) {
 
     private fun pollOnce(baseUrl: String, apiKey: String) {
         val jobs = fetchPendingJobs(baseUrl, apiKey)
+        lastJobsFound = jobs.length()
+        if (jobs.length() == 0) {
+            lastPollDetail = "GET ok, 0 pending jobs"
+            return
+        }
+
+        val details = mutableListOf<String>()
         for (i in 0 until jobs.length()) {
             val job = jobs.getJSONObject(i)
             val id = job.getString("id")
             val payloadBase64 = job.getString("payload_base64")
 
             try {
-                updateJobStatus(baseUrl, apiKey, id, "printing", null)
+                patchJobStatus(baseUrl, apiKey, id, "printing", null)
                 val bytes = Base64.decode(payloadBase64, Base64.DEFAULT)
                 PrinterBridge.printAuto(context, bytes)
-                updateJobStatus(baseUrl, apiKey, id, "done", null)
+                patchJobStatus(baseUrl, apiKey, id, "done", null)
                 lastPrintedJobId = id
+                details.add("$id → done")
             } catch (e: Exception) {
-                Log.w(TAG, "Print failed for job $id", e)
+                Log.w(TAG, "Job $id failed: ${e.message}", e)
+                lastError = "Job $id: ${e.message}"
+                details.add("$id → error: ${e.message}")
                 try {
-                    updateJobStatus(baseUrl, apiKey, id, "error", e.message ?: "Print failed")
-                } catch (_: Exception) {
-                    // if even the status update fails, next poll will retry naturally
+                    patchJobStatus(baseUrl, apiKey, id, "error", e.message ?: "Print failed")
+                } catch (e2: Exception) {
+                    Log.w(TAG, "Could not record error for $id: ${e2.message}")
+                    details.add("$id → error-recording also failed: ${e2.message}")
+                    lastError = "Job $id: ${e.message}; status update also failed: ${e2.message}"
                 }
             }
         }
+        lastPollDetail = details.joinToString("; ")
     }
 
     private fun fetchPendingJobs(baseUrl: String, apiKey: String): JSONArray {
@@ -112,17 +129,22 @@ class SupabasePoller(private val context: Context) {
 
         return try {
             val code = conn.responseCode
-            if (code !in 200..299) {
-                throw IllegalStateException("Supabase GET returned $code")
-            }
             val body = conn.inputStream.bufferedReader().readText()
+            Log.d(TAG, "GET $url → $code, body length=${body.length}")
+            if (code !in 200..299) {
+                throw IllegalStateException("Supabase GET returned $code: $body")
+            }
             JSONArray(body)
+        } catch (e: Exception) {
+            Log.e(TAG, "GET failed: ${e.message}", e)
+            lastError = "GET failed: ${e.message}"
+            throw e
         } finally {
             conn.disconnect()
         }
     }
 
-    private fun updateJobStatus(baseUrl: String, apiKey: String, jobId: String, status: String, error: String?) {
+    private fun patchJobStatus(baseUrl: String, apiKey: String, jobId: String, status: String, error: String?) {
         val body = JSONObject().apply {
             put("status", status)
             if (error != null) put("error", error)
@@ -172,8 +194,23 @@ class SupabasePoller(private val context: Context) {
             if (code !in 200..299) {
                 throw IllegalStateException("Supabase PATCH returned $code")
             }
+            Log.d(TAG, "PATCH print_jobs?id=eq.$jobId → $code ($status)")
         } finally {
             try { socket.close() } catch (_: Exception) {}
+        }
+    }
+
+    fun testConnection(baseUrl: String, apiKey: String): String {
+        return try {
+            val jobs = fetchPendingJobs(baseUrl, apiKey)
+            val count = jobs.length()
+            val ids = mutableListOf<String>()
+            for (i in 0 until count) {
+                ids.add(jobs.getJSONObject(i).getString("id"))
+            }
+            "GET ok — $count pending job(s)" + if (ids.isNotEmpty()) ": ${ids.joinToString()}" else ""
+        } catch (e: Exception) {
+            "GET failed: ${e.message}"
         }
     }
 

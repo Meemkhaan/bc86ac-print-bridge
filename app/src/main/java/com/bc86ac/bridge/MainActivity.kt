@@ -75,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         binding.batteryOptBtn.setOnClickListener { requestIgnoreBatteryOptimizations() }
         binding.saveCloudBtn.setOnClickListener { saveCloudConfig() }
         binding.editCloudBtn.setOnClickListener { editCloudConfig() }
+        binding.testCloudBtn.setOnClickListener { testCloudSync() }
 
         loadNetworkConfig()
         loadCloudConfig()
@@ -144,6 +145,14 @@ class MainActivity : AppCompatActivity() {
         binding.usbStatusText.text = paired ?: "No USB printer paired"
 
         binding.cloudSyncStatusText.text = getCloudSyncStatusText()
+
+        val detail = SupabasePoller.lastPollDetail
+        if (detail != null) {
+            binding.cloudSyncDetailText.text = detail
+            binding.cloudSyncDetailText.visibility = android.view.View.VISIBLE
+        } else {
+            binding.cloudSyncDetailText.visibility = android.view.View.GONE
+        }
     }
 
     private fun getCloudSyncStatusText(): String {
@@ -152,14 +161,16 @@ class MainActivity : AppCompatActivity() {
 
         val lastPoll = SupabasePoller.lastPollAt
         val err = SupabasePoller.lastError
+        val jobsFound = SupabasePoller.lastJobsFound
         if (lastPoll == 0L) return "Configured, waiting for first poll..."
 
         val secondsAgo = (System.currentTimeMillis() - lastPoll) / 1000
-        return if (err != null) {
-            "Error: $err (last tried ${secondsAgo}s ago)"
+        val base = if (err != null) {
+            "Error: $err"
         } else {
-            "Connected, last checked ${secondsAgo}s ago"
+            "Polling ok"
         }
+        return "$base | $jobsFound pending | ${secondsAgo}s ago"
     }
 
     private fun getLocalIpAddress(): String? {
@@ -264,6 +275,25 @@ class MainActivity : AppCompatActivity() {
         binding.supabaseKeyInput.alpha = if (editable) 1.0f else 0.7f
         binding.saveCloudBtn.visibility = if (editable) android.view.View.VISIBLE else android.view.View.GONE
         binding.editCloudBtn.visibility = if (editable) android.view.View.GONE else android.view.View.VISIBLE
+    }
+
+    private fun testCloudSync() {
+        val url = binding.supabaseUrlInput.text.toString().trim()
+        val key = binding.supabaseKeyInput.text.toString().trim()
+        if (url.isBlank() || key.isBlank()) {
+            toast("Save Supabase URL and key first")
+            return
+        }
+        toast("Testing connection...")
+        executor.execute {
+            val poller = SupabasePoller(applicationContext)
+            val result = poller.testConnection(url, key)
+            mainHandler.post {
+                binding.cloudSyncDetailText.text = result
+                binding.cloudSyncDetailText.visibility = android.view.View.VISIBLE
+                toast(result)
+            }
+        }
     }
 
     // ---- Test prints ----
