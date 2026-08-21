@@ -8,6 +8,7 @@ import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.io.InputStream
 import java.io.OutputStream
@@ -39,12 +40,14 @@ import java.util.concurrent.atomic.AtomicBoolean
 class PrintBridgeService : Service() {
 
     companion object {
+        private const val TAG = "PrintBridgeService"
         const val PORT = 9876
         const val CHANNEL_ID = "bc86ac_bridge_channel"
         const val NOTIFICATION_ID = 1
         const val PREFS_NAME = "bc86ac_bridge_prefs"
         const val PREF_USB_VENDOR_ID = "usb_vendor_id"
         const val PREF_USB_PRODUCT_ID = "usb_product_id"
+        private const val ACTION_USB_PERMISSION = "com.bc86ac.bridge.USB_PERMISSION"
 
         @Volatile var isRunning = false
             private set
@@ -62,6 +65,7 @@ class PrintBridgeService : Service() {
     private lateinit var usbManager: UsbManager
     private lateinit var prefs: SharedPreferences
     private lateinit var poller: SupabasePoller
+    private var usbPermissionReceiver: android.content.BroadcastReceiver? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -78,6 +82,7 @@ class PrintBridgeService : Service() {
             pool.execute { runServer() }
         }
         poller.start()
+        autoRequestUsbPermission()
         return START_STICKY
     }
 
@@ -87,6 +92,9 @@ class PrintBridgeService : Service() {
         poller.stop()
         try { if (::serverSocket.isInitialized) serverSocket.close() } catch (_: Exception) {}
         pool.shutdownNow()
+        try {
+            usbPermissionReceiver?.let { unregisterReceiver(it) }
+        } catch (_: Exception) {}
         super.onDestroy()
     }
 
@@ -236,7 +244,7 @@ class PrintBridgeService : Service() {
     // ---- Network printing ----
 
     fun printOverNetwork(host: String, port: Int, bytes: ByteArray) {
-        PrinterBridge.printOverNetwork(host, port, bytes)
+        PrinterBridge.printOverNetworkWithRetry(host, port, bytes)
     }
 
     // ---- USB printing ----
@@ -272,5 +280,36 @@ class PrintBridgeService : Service() {
     private fun updateNotification(status: String) {
         val nm = getSystemService(NotificationManager::class.java)
         nm.notify(NOTIFICATION_ID, buildNotification(status))
+    }
+
+    private fun autoRequestUsbPermission() {
+        val device = PrinterBridge.getPairedUsbDevice(this) ?: return
+        if (usbManager.hasPermission(device)) return
+
+        Log.d(TAG, "Auto-requesting USB permission for ${device.productName ?: device.deviceName}")
+
+        val filter = android.content.IntentFilter(ACTION_USB_PERMISSION)
+        usbPermissionReceiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                if (intent.action == ACTION_USB_PERMISSION) {
+                    val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                    Log.d(TAG, "USB permission result: granted=$granted")
+                    try { unregisterReceiver(this) } catch (_: Exception) {}
+                }
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(usbPermissionReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(usbPermissionReceiver, filter)
+        }
+
+        val permissionIntent = PendingIntent.getBroadcast(
+            this, 0, Intent(ACTION_USB_PERMISSION),
+            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        usbManager.requestPermission(device, permissionIntent)
     }
 }

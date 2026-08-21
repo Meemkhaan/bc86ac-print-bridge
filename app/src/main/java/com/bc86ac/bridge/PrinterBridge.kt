@@ -7,6 +7,7 @@ import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
+import android.util.Log
 import java.net.InetSocketAddress
 import java.net.Socket
 
@@ -16,6 +17,9 @@ import java.net.Socket
  * PrintBridgeService, or the manual test buttons in MainActivity).
  */
 object PrinterBridge {
+
+    private const val TAG = "PrinterBridge"
+    private const val MAX_NETWORK_RETRIES = 3
 
     fun getPairedUsbDevice(context: Context): UsbDevice? {
         val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
@@ -32,13 +36,17 @@ object PrinterBridge {
         val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
         val device = getPairedUsbDevice(context)
         if (device != null && usbManager.hasPermission(device)) {
-            printOverUsb(context, bytes)
-            return
+            try {
+                printOverUsb(context, bytes)
+                return
+            } catch (e: Exception) {
+                Log.w(TAG, "USB print failed, falling back to network: ${e.message}")
+            }
         }
         val prefs = context.getSharedPreferences(PrintBridgeService.PREFS_NAME, Context.MODE_PRIVATE)
         val ip = prefs.getString("printer_ip", "192.168.18.100")!!
         val port = prefs.getString("printer_port", "9100")!!.toIntOrNull() ?: 9100
-        printOverNetwork(ip, port, bytes)
+        printOverNetworkWithRetry(ip, port, bytes)
     }
 
     fun printOverUsb(context: Context, bytes: ByteArray) {
@@ -81,6 +89,26 @@ object PrinterBridge {
             socket.getOutputStream().flush()
             Thread.sleep(200) // give the printer a moment before we close
         }
+    }
+
+    fun printOverNetworkWithRetry(host: String, port: Int, bytes: ByteArray) {
+        var lastException: Exception? = null
+        for (attempt in 1..MAX_NETWORK_RETRIES) {
+            try {
+                Log.d(TAG, "Network print attempt $attempt/$MAX_NETWORK_RETRIES to $host:$port")
+                printOverNetwork(host, port, bytes)
+                return
+            } catch (e: Exception) {
+                lastException = e
+                Log.w(TAG, "Attempt $attempt failed: ${e.message}")
+                if (attempt < MAX_NETWORK_RETRIES) {
+                    val delayMs = attempt * 500L
+                    Log.d(TAG, "Retrying in ${delayMs}ms...")
+                    Thread.sleep(delayMs)
+                }
+            }
+        }
+        throw lastException!!
     }
 
     private fun findBulkOutInterface(device: UsbDevice): Pair<UsbInterface, UsbEndpoint>? {

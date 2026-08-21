@@ -339,7 +339,7 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     val ip = prefs.getString("printer_ip", "192.168.18.100")!!
                     val port = prefs.getString("printer_port", "9100")!!.toIntOrNull() ?: 9100
-                    PrinterBridge.printOverNetwork(ip, port, bytes)
+                    PrinterBridge.printOverNetworkWithRetry(ip, port, bytes)
                 }
                 mainHandler.post { toast("Sent to printer") }
             } catch (e: Exception) {
