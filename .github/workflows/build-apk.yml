@@ -20,13 +20,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          api-level: 34
-          ndk-version: r26c
+          gradle-version: '8.7'
 
-      - name: Grant gradle permission
+      - name: Generate Gradle Wrapper
+        run: gradle wrapper --gradle-version 8.7
+
+      - name: Make gradlew executable
         run: chmod +x ./gradlew
 
       - name: Build debug APK
