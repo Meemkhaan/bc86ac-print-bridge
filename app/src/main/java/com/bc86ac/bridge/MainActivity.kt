@@ -77,9 +77,11 @@ class MainActivity : AppCompatActivity() {
         binding.editCloudBtn.setOnClickListener { editCloudConfig() }
         binding.testCloudBtn.setOnClickListener { testCloudSync() }
         binding.installUpdateBtn.setOnClickListener { installUpdate() }
+        binding.saveBridgeSecretBtn.setOnClickListener { saveBridgeSecret() }
 
         loadNetworkConfig()
         loadCloudConfig()
+        loadBridgeSecret()
         setCloudFieldsEditable(false)
         requestNotificationPermissionIfNeeded()
         startBridgeService() // auto-start on app open; also runs on boot via BootReceiver
@@ -260,6 +262,18 @@ class MainActivity : AppCompatActivity() {
             .apply()
         setCloudFieldsEditable(false)
         toast("Saved -- polling will pick up the new config within a few seconds")
+    }
+
+    private fun loadBridgeSecret() {
+        binding.bridgeSecretInput.setText(prefs.getString(PrintBridgeService.PREF_BRIDGE_SECRET, ""))
+    }
+
+    private fun saveBridgeSecret() {
+        val secret = binding.bridgeSecretInput.text.toString().trim()
+        prefs.edit()
+            .putString(PrintBridgeService.PREF_BRIDGE_SECRET, secret)
+            .apply()
+        toast(if (secret.isBlank()) "Auth disabled" else "Secret saved -- HMAC required for API calls")
     }
 
     private fun editCloudConfig() {

@@ -128,4 +128,15 @@ object PrinterBridge {
         }
         return null
     }
+
+    fun checkPrinterReachable(context: Context, host: String, port: Int): Boolean {
+        return try {
+            Socket().use { socket ->
+                socket.connect(InetSocketAddress(host, port), 1500)
+            }
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
 }

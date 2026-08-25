@@ -255,6 +255,58 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- Bridge Security card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#242220"
+            android:padding="16dp"
+            android:layout_marginTop="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BRIDGE SECURITY"
+                android:textColor="#8a8073"
+                android:textSize="11sp"
+                android:letterSpacing="0.08"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="HMAC secret for API authentication (32+ chars). Required for /print, /print-ticket, /status. Generate: openssl rand -hex 32"
+                android:textColor="#8a8073"
+                android:textSize="11sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Bridge Secret"
+                android:textColor="#8a8073"
+                android:textSize="10sp" />
+
+            <EditText
+                android:id="@+id/bridgeSecretInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:textColor="#f6f2e7"
+                android:fontFamily="monospace"
+                android:hint="Leave empty to disable auth (not recommended)" />
+
+            <Button
+                android:id="@+id/saveBridgeSecretBtn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="Save Secret" />
+
+        </LinearLayout>
+
         <!-- Cloud sync card -->
         <LinearLayout
             android:layout_width="match_parent"
