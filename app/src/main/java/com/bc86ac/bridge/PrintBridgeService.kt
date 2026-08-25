@@ -8,7 +8,6 @@ import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
 import android.os.IBinder
-import android.os.Process
 import android.util.Base64
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -71,6 +70,8 @@ class PrintBridgeService : Service() {
 
         @Volatile var lastPrintAt: Long = 0
             private set
+
+        @JvmStatic var serviceStartTime = System.currentTimeMillis()
     }
 
     private lateinit var serverSocket: ServerSocket
@@ -396,7 +397,7 @@ class PrintBridgeService : Service() {
         val paired = getPairedUsbDevice()
         val usbOk = paired != null && (getSystemService(Context.USB_SERVICE) as UsbManager).hasPermission(paired)
 
-        val uptimeSec = (System.currentTimeMillis() - Process.myStartTime()) / 1000
+        val uptimeSec = (System.currentTimeMillis() - serviceStartTime) / 1000
 
         val body = """{
             "status":"online",
