@@ -16,7 +16,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.ServerSocket
 import java.net.Socket
-import java.nio.charset.Charsets
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -339,7 +339,7 @@ class PrintBridgeService : Service() {
         }
 
         // Parse JSON body: {payload_base64, ticket_number?}
-        val jsonStr = String(body, Charsets.UTF_8)
+        val jsonStr = String(body, StandardCharsets.UTF_8)
         var payloadB64: String? = null
         var ticketNumber: String? = null
 
@@ -396,7 +396,7 @@ class PrintBridgeService : Service() {
         val paired = getPairedUsbDevice()
         val usbOk = paired != null && (getSystemService(Context.USB_SERVICE) as UsbManager).hasPermission(paired)
 
-        val uptimeSec = (System.currentTimeMillis() - android.os.Process.myStartTime()) / 1000
+        val uptimeSec = (System.currentTimeMillis() - Process.myStartTime()) / 1000
 
         val body = """{
             "status":"online",

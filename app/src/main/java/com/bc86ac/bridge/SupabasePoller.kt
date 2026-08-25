@@ -7,6 +7,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -164,7 +165,7 @@ class SupabasePoller(private val context: Context) {
         val url = URL("$baseUrl/rest/v1/print_jobs?id=eq.$jobId")
         val host = url.host
         val path = url.file
-        val bodyBytes = body.toByteArray(Charsets.UTF_8)
+        val bodyBytes = body.toByteArray(StandardCharsets.UTF_8)
 
         val socketFactory = javax.net.ssl.SSLSocketFactory.getDefault()
         val socket = socketFactory.createSocket(host, 443) as javax.net.ssl.SSLSocket
@@ -184,7 +185,7 @@ class SupabasePoller(private val context: Context) {
             }
 
             val out = socket.outputStream
-            out.write(request.toByteArray(Charsets.UTF_8))
+            out.write(request.toByteArray(StandardCharsets.UTF_8))
             out.write(bodyBytes)
             out.flush()
 
