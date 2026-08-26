@@ -1,0 +1,29 @@
+[Unit]
+Description=BC-86AC Print Bridge (Python)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/bc86ac-print-bridge-python
+EnvironmentFile=/opt/bc86ac-print-bridge-python/.env
+ExecStart=/opt/bc86ac-print-bridge-python/.venv/bin/python print_bridge.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/bc86ac-print-bridge-python
+
+# USB access (for /dev/usb/lp*)
+SupplementaryGroups=lp dialout
+
+[Install]
+WantedBy=multi-user.target
