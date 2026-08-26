@@ -23,7 +23,6 @@ import socket
 import ssl
 import threading
 import time
-from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, List, Tuple
@@ -625,11 +624,11 @@ def supabase_poll_loop() -> None:
         time.sleep(SUPABASE_POLL_INTERVAL_MS / 1000)
 
 # ============================================================
-# FastAPI Lifespan
+# FastAPI Startup/Shutdown Events
 # ============================================================
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+@app.on_event("startup")
+async def startup_event():
     global worker_running, _usb_thread, _supabase_thread, started_at
     
     worker_running = True
@@ -648,7 +647,7 @@ async def lifespan(app: FastAPI):
         logger.info("Print bridge ready. USB disabled.")
     
     # Start Supabase poller if configured
-    if SUPABASE_URL and SUPABASE_ANON_KEY:
+    if SUPABASE_ENABLED:
         _supabase_thread = threading.Thread(
             target=supabase_poll_loop,
             name="supabase-poll",
@@ -658,8 +657,10 @@ async def lifespan(app: FastAPI):
         logger.info("Supabase poller started.")
     else:
         logger.info("Supabase not configured; poller not started.")
-    
-    yield
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    global worker_running
     
     worker_running = False
     
@@ -677,7 +678,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="BC-86AC Print Bridge (Python)",
     version="1.0.0",
-    lifespan=lifespan,
 )
 
 app.add_middleware(
